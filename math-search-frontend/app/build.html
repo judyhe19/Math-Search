@@ -1,0 +1,419 @@
+<!-- Build page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+<body>
+    <!-- Using Bootstrap 5's Grid Layout support throughout. Reference: https://getbootstrap.com/docs/5.0/layout/grid/ -->
+    <!-- Using Bootstrap 5's Text support throughout. Reference: https://getbootstrap.com/docs/5.0/utilities/text/ -->
+    <div class="container-md">         
+        <div class="row p-1">
+            <div class="col-sm m-5">
+                <div>
+                    <p class="fs-1 fw-bolder">TITLE:</p>
+                    <!-- Problem set title field -->
+                    <input class="form-control" type="text" placeholder="Untitled Problem Set" id="title-text">
+                </div>
+               
+                <div class="row p-2">
+                    <!-- Selected Problems List -->
+                    <!-- Will be populated using JavaScript code upon loading of the window -->
+                    <!-- Using Bootstrap 5's List layout. Reference: https://getbootstrap.com/docs/5.0/components/list-group/ -->
+                    <ul class="list-group" id="problems-list">
+                    </ul>
+                </div> 
+                <div class="input-group mb-3 p-2">
+                    <label class="input-group-text" for="inputGroupSelect01">Class</label>
+                    <!-- Select Class dropdown -->
+                    <select class="form-select" id="select-class-list">
+                        <option value="-1" selected>Choose...</option>
+                    </select>
+                    <!-- New class field -->
+                    <input type="text" class="form-control" aria-label="Text input with dropdown button" id="new-class-text" placeholder="Add a new class">
+                    <!-- Add class button -->
+                    <button class="btn btn-outline-primary" type="button" id="btn-add-class">Add Class</button>
+
+                </div>
+                <div class="row text-center p-2"> 
+                    <!-- Exit button -->
+                    <div class="col-sm">
+                        <button onclick="exit()" type="button" class="btn btn-primary btn-lg" id="btn-exit">EXIT</button>
+                    </div>
+                    <!-- Generate PDF of problem set button (questions and answers) -->
+                    <div class="col-sm">
+                        <button onclick="generate(false)" type="button" class="btn btn-success btn-lg" id="btn-exit">GENERATE</button>
+                    </div>
+                    <!-- Generate PDF of problem set button (questions only) -->
+                    <div class="col-sm">
+                        <button onclick="generate(true)" type="button" class="btn btn-success btn-lg" id="btn-exit">Generate Questions Only</button>
+                    </div>
+                    
+                </div> 
+            </div>
+            <!-- Display of problem set preview using Bootstrap 5's Card layout support. Reference: https://getbootstrap.com/docs/5.0/components/card/ -->
+            <div class="col-sm ">
+                <div class="row m-3">
+                    <!-- Display of the select problems' question -->
+                    <div class="card">
+                        <h5 class="card-header text-center">QUESTIONS</h5>
+                        <!-- Will be modified using JavaScript code upon loading of the window -->
+                        <div class="card-body">
+                            <span id="questions-body">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row m-3">
+                    <div class="card">
+                    <!-- Display of the select problems' answer -->
+                        <h5 class="card-header text-center">ANSWER KEY</h5>
+                        <!-- Will be modified using JavaScript code upon loading of the window -->
+                        <div class="card-body">
+                            <span id="answers-body">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>   
+        </div>
+        <!-- Placeholder for displaying any error/warning messages -->
+        <div class="row text-center p-3">
+            <div class="col-sm m-3">
+                <h5 class="text-danger text-center" id="msg"></h5>
+            </div>
+        </div>
+       
+
+    </div>
+   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>     
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+    <!-- importing JS PDF package -->   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.0.272/jspdf.debug.js"></script>
+    <script> 
+        const host = "http://localhost:8080";
+        
+        // obtaining all necessary elements in the HTML and local storage
+        const userId = localStorage.getItem('userId'); 
+        var selectedProblemsIds = JSON.parse(localStorage.getItem('selectedProblemsIds'));
+        // Check if selected problems list in local storage is null. If yes, assign its local variable a empty array to prevent errors
+        if (selectedProblemsIds == null) {
+            selectedProblemsIds = [];
+        }
+        const selectElement = document.querySelector('#problems-list');
+        const psTitle = document.querySelector("#title-text");
+        const qTitle = document.querySelector("#question-title");
+        const qBody = document.querySelector("#questions-body");
+        const aTitle = document.querySelector("#answer-title");
+        const aBody = document.querySelector("#answers-body");
+        const selectList = document.querySelector('#select-class-list');
+        const addClassBtn = document.querySelector("#btn-add-class");
+        const newClassText = document.querySelector("#new-class-text");
+
+        // Call the its corresponding function when a button is clicked.
+        addClassBtn.addEventListener('click', addClass);
+        
+        var counter = 0; // keeping track of question number for the preview 
+        var classes = []; // keeping track of the classes ids
+        var mostRecentEvent = null; // keeping track of most recent unchecked event for deleting a selected problem
+
+        // Calling necessary functions upon loading the window. Function referenced from: https://stackoverflow.com/questions/3842614/how-do-i-call-a-javascript-function-on-page-load
+        window.onload = function() {
+            // Populate the problems list from selected problem list in local storage
+            populateProblems();
+            // HTTP request to call backend API for obtaining all the classes belonging to the current user
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "GET",
+                "url": host + "/class/getClasses/" + userId
+            }).then(response => {
+                // Response will contain an array of class objects
+                const obj = response.data;
+                // Assign retrieved array of classes under the current user to the local variable
+                classes = obj.data;
+            })
+            .finally(() => {
+                // Populating classes dropdown 
+                populateClasses();
+            })
+            .catch(function (error) {
+                // If HTTP request for obtaining classes failed, log error message in console.              
+                console.log(error);
+            });
+            
+        };
+        
+        // When a problem's checkbox is unchecked, evoke corresponding functions (delete the problemc from selected list)
+        // Referenced code: https://www.folkstalk.com/tech/checkbox-event-listener-with-code-examples/
+        selectElement.addEventListener('change', (event) => {
+            mostRecentEvent = event;
+            if (!event.target.checked) {
+                deleteProblemFromSelectedList();
+            }
+        });
+
+        // Populate classes dropdown
+        function populateClasses() {
+            // Check if the list of classes is null or empty
+            if (classes != null && classes.length != 0) {
+                // If not empty, for each class in the list, add an HTML list element to the class list for the class 
+                for (var i = 0; i < classes.length; i++) {
+                    var classObj = classes[i];
+                    var classId = classObj.id;
+                    var className = classObj.name;
+                    selectList.innerHTML += `
+                        <option value="`+ classId +`">`+ className +`</option>
+                    `;
+                }
+            } 
+            else {
+                // if not classes exist, display message indicating the user does not have classes
+                document.querySelector('#msg').innerHTML = "No classes added.";
+            }
+
+        }
+
+        // Populating the selected problems list
+        function populateProblems() {
+            // check if current selected problems list is empty
+            if (selectedProblemsIds != null && selectedProblemsIds.length != 0) {
+                // reset all fields
+                counter = 0;
+                qBody.innerHTML = ``;
+                aBody.innerHTML = ``;
+                document.querySelector('#problems-list').innerHTML = ``;
+
+                // Populate the problem list from selected problems list in local storage
+                for (var i = 0; i<selectedProblemsIds.length; i++) {
+                    const pId = selectedProblemsIds[i];
+                    document.querySelector('#problems-list').innerHTML += `
+                        <li class="list-group-item">
+                            <input class="form-check-input me-1" checked=checked type="checkbox" id="`+ pId +`" name="checkbox aria-label="...">
+                            Problem `+ (i+1) +`
+                        </li>
+                    `;
+
+                    // HTTP request to call backend API for obtaining the question and answer text of the current question edited
+                    axios({
+                        "headers": {'Access-Control-Allow-Origin': '*'},
+                        "method": "GET",
+                        "url": host + "/problem/selectProblem/" + pId
+                    }).then(response => {
+                        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
+                        // https://www.w3schools.com/js/js_htmldom_html.asp 
+                        const obj = response.data;
+                        const problem = obj.data;
+                        const msg = obj.message;
+                        counter++;
+                        // Setting the questions and answers preview 
+                        qBody.innerHTML += `</p>`+counter + `) `+problem.questionText + `\n\n\n\n\n\n\n\n</p>`;
+                        aBody.innerHTML += `</p>`+counter + `) ` +problem.answerText + `\n\n</p>`;
+
+                    })
+                    .catch(function (error) {
+                        // If HTTP request for obtaining the current selected problem's information failed, log error message in console.              
+                        console.log(error);
+                    });
+                }
+            }
+            else {
+                // If no selected problems list is empty, display message
+                document.querySelector('#msg').innerHTML = "No problems selected.";
+            }
+    
+        }
+
+        // Exit - return to Dashboard (home) page
+        function exit() {
+            window.location.replace("../app/dashboard.html");
+        }
+
+        // Delete a problem from selected problems list in local storage
+        function deleteProblemFromSelectedList() {
+            // Check for the most recently selected problem - the problem to delete
+            if (mostRecentEvent == null) {
+                document.querySelector('#msg').innerHTML = "You do not have a problem selected";
+                return;
+            }
+            const pId = mostRecentEvent.target.id;
+            const index = selectedProblemsIds.indexOf(pId);
+            
+            // Delete problem from selected problems list array
+            if (index > -1) { // only splice array when item is found
+                selectedProblemsIds.splice(index, 1); 
+                localStorage.setItem("selectedProblemsIds", JSON.stringify(selectedProblemsIds));
+            }
+            // Reload page
+            location.reload();
+        }
+
+        // Generate problem set and store in database, labeling it with selected class
+        function generate(onlyQuestions) {
+            const cId = selectList.value;
+            var setId = -1;
+            // Check if selected a class
+            if (cId == null || cId == -1){
+                document.querySelector('#msg').innerHTML = "No class selected.";
+                return;
+            }
+            // Check if the selected problems list is empty
+            if (selectedProblemsIds == null || selectedProblemsIds.length == 0) {
+                document.querySelector('#msg').innerHTML = "No problems selected.";
+                return;
+            } 
+            
+            // HTTP request to call backend API for creating a new problem set labelled by class
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/problem/createProblemSet",
+                "data": {
+                    "name": psTitle.value,
+                    "ownerId": userId,
+                    "classId": cId
+                }
+            }).then(response => {
+                // Response returns the new problem set object
+                const obj = response.data;
+                set = obj.data;
+                // Assign the id of the new problem set to local variable
+                setId = set.id;
+            }).finally(() => {
+                // HTTP request to call backend API for adding problems to the new problem set
+                for (var i = 0; i<selectedProblemsIds.length; i++) {
+                    const pId = selectedProblemsIds[i];
+                    axios({
+                        "headers": {'Access-Control-Allow-Origin': '*'},
+                        "method": "POST",
+                        "url": host + "/problem/addToProblemSet/" + setId,
+                        "data": {
+                            "id": pId,
+                            "ownerId": userId
+                        }
+                    }).then(response => {
+                        const obj = response.data;
+                        const list = obj.data;
+                        const msg = obj.message;
+                    })
+                    .catch(function (error) {
+                        // If HTTP request for adding problem to problem set failed, log error message in console.              
+                        console.log(error);
+                    });
+                }
+                // Generate PDF of problem set
+                generatePDF(onlyQuestions);
+                // Redirect user to Dashboard (home) page
+                window.location.replace("../app/dashboard.html");
+            
+            })
+            .catch(function (error) {
+                // If HTTP request for creating problem set failed, log error message in console.              
+                console.log(error);
+            });
+
+        }   
+          
+        // Generate PDF of problem set
+        // Code adapted from: https://medium.com/coderbyte/generate-a-pdf-with-javascript-3e53ca7b47e
+        function generatePDF(onlyQuestions) {
+            const questions = document.querySelector("#questions-body").textContent;
+            const answers = document.querySelector("#answers-body").textContent;
+
+            // Formatting PDF
+            // Code adapted from https://codingdeekshi.com/jspdf-word-wrap-example-to-set-margin-padding/
+            var lMargin=30; //left margin in mm
+            var rMargin=15; //right margin in mm
+            var pdfInMM=210;  // width of A4 in mm
+            // end of adaptation
+
+            var pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4',
+                putOnlyUsedFonts:true
+            });
+
+            // Formatting PDF 
+            // Reference: http://raw.githack.com/MrRio/jsPDF/master/docs/jsPDF.html#setFont
+            pdf.setFontSize(24);
+            pdf.setFont(undefined, 'bold');
+            pdf.text(psTitle.value, 20, 20);
+            pdf.setFontSize(12);
+            pdf.setFont(undefined, 'normal');
+
+            var qLines = pdf.splitTextToSize(questions, (pdfInMM-lMargin-rMargin));
+            pdf.text(20, 40, qLines);
+            
+            // If user selected both questions and answers, generated PDF will include the problem set and corresponding answer key
+            if (!onlyQuestions) {
+                pdf.addPage();
+
+                pdf.setFontSize(24);
+                pdf.setFont(undefined, 'bold');
+                pdf.text(psTitle.value+" - ANSWER KEY", 20, 20);
+                pdf.setFontSize(12);
+                pdf.setFont(undefined, 'normal');
+
+                var aLines = pdf.splitTextToSize(answers, (pdfInMM-lMargin-rMargin));
+                pdf.text(20, 40, aLines);
+                pdf.save(psTitle.value+'.pdf');
+            }
+            // If user selected only questions, generated PDF will include only the problem set and no corresponding answer key
+            else {
+                pdf.save(psTitle.value+'-Q-ONLY'+'.pdf');
+            }
+        }
+        // End of code adaptation
+
+        // Add a class 
+        function addClass() {
+            const name = newClassText.value;
+
+            // Check if entered a name for the new class
+            if (name == "") {
+                document.querySelector('#msg').innerHTML = "New class name EMPTY";
+                return;
+            } 
+        
+            // HTTP request to call backend API for adding class to the new problem set
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/class/add/",
+                "data": {
+                    "name": name,
+                    "teacherId": userId
+                }
+            }).then(response => {
+                const obj = response.data;
+                const data = obj.data;
+                const msg = obj.message;
+                // Check whether class added successfully.
+                if (data != null) {
+                    // Class added success. Reset new class name text field and reload page
+                    newClassText.value = "";
+                    location.reload();
+                }
+                else {
+                    // Class adding failed. Display message returned from backend through the HTTP request.
+                    document.querySelector('#msg').innerHTML = msg;
+                }
+            })
+            .catch(function (error) {
+                // If HTTP request for adding a class failed, log error message in console.              
+                console.log(error);
+            });
+        }
+
+
+        
+    </script>
+
+</body> 
+
+</html>

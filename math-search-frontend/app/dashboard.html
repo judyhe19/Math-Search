@@ -1,0 +1,580 @@
+<!-- User's Dashboard (home) page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Search - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+    <!-- Using Bootstrap 5's Grid Layout support throughout. Reference: https://getbootstrap.com/docs/5.0/layout/grid/ -->
+    <!-- Using Bootstrap 5's Text support throughout. Reference: https://getbootstrap.com/docs/5.0/utilities/text/ -->
+    <div class="container-md">
+       
+         <!-- Using Bootstrap 5's Row and Column Layout support. Reference: https://getbootstrap.com/docs/5.1/layout/gutters/ -->
+        <div class="row text-center">
+            <div class="col-sm m-3">
+                <!-- Student Classes button -->
+                <button type="button" class="fs-4 fw-bolder btn btn-dark btn-lg" id="classes-btn">CLASSES</button>
+            </div>            
+            <div class="col-sm m-3">
+                <!-- Add Problem button -->
+                <a href="../app/add.html" type="button" class="fs-4 fw-bolder btn btn-info btn-lg" id="add-btn">ADD</a>
+            </div>
+            <div class="col-sm m-3">
+                <!-- Build Problem Set button -->
+                <a href="../app/build.html" type="button" class="fs-4 fw-bolder btn btn-info btn-lg" id="build-btn">BUILD</a>
+            </div>
+            <!-- Admin only features (will be removed for regular users) -->
+            <div class="col-sm" id="admin-only-features">
+                <!-- View other users button -->
+                <div class="row text-center m-3 ">
+                    <button type="button" class="fs-4 fw-bolder btn btn-dark btn-lg" id="others-btn">OTHER USERS</button>
+                </div>
+                <!-- Generate invitation code button -->
+                <div class="row text-center">
+                    <button type="button" class="fs-4 fw-bolder btn btn-dark btn-lg" data-bs-toggle="modal" data-bs-target="#staticBackdrop" id="invitation-btn">
+                        Invitation Code
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Page title -->
+        <div class="row text-center p-3">
+            <p class="fs-1 fw-bolder" id="title">Dashboard</p>
+        </div>
+        <!-- Search features (search field, search button and reset search button) using Bootstrap 5's Navbar feature. Reference: https://getbootstrap.com/docs/5.1/components/navbar/ -->
+        <div class="row text-center p-1">
+            <div class="col-sm m-1">
+                <div class="container-fluid  text-center">
+                    <input class="form-control m-2" type="text" placeholder="Search Tags" id="search-text">
+                    <button class="btn btn-outline-primary m-1"  id="search-btn">Search</button>
+                    <button class="btn btn-outline-danger m-1"  id="reset-btn">Reset</button>
+                </div>
+            </div>
+         </div>
+    </div>
+
+    <!-- Display of tags using Bootstrap 5's Card layout support. Reference: https://getbootstrap.com/docs/5.0/components/card/ -->
+    <div class="row p-5" id="cards">
+        <!-- Will be populated using JavaScript code upon loading of the window -->
+        <p class="fs-2 text-center" id="msg"></p>
+    </div>
+
+    <div class="container-md">
+        <div class="row p-5">
+        <!-- Logout button -->
+        <div class="col-sm m-3">
+            <button type="button" class="fs-4 fw-bolder btn btn-primary btn-lg" id="logout-btn">LOGOUT</button>
+        </div>
+        <div class="d-grid gap-2 col-3 mx-auto">
+            <!-- Reset Name button -->            
+            <button type="button" class="fs-4 fw-bolder btn btn-outline-warning btn-lg" id="reset-n">Reset Name</button>
+            <!-- Reset Password button -->            
+            <button type="button" class="fs-4 fw-bolder btn btn-outline-warning btn-lg" id="reset-p">Reset Password</button>
+        </div>
+    </div>
+  
+    </div>
+    
+    <!-- Pop-up window to present the Admin with a new invitation code for registering new users (Teachers). Code Adapted from https://getbootstrap.com/docs/5.0/components/modal/ -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">New Invitation Code (Valid for 10 minutes)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="code-display">
+            ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+        </div>
+    </div>
+    <!-- End of adapted code -->
+  
+    <!-- importing Bootstrap 5 support -->   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>    
+    <!-- importing AXIOS HTTP client support package. Source: https://github.com/axios/axios-->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        const host = "http://localhost:8080";
+        var userId = "";
+
+        // Calling necessary functions upon loading the window. Function referenced from: https://stackoverflow.com/questions/3842614/how-do-i-call-a-javascript-function-on-page-load
+        window.onload = function() {
+            // HTTP request to call backend API for the obtaining all current user's information that have not been stored in local storage - their id and username.
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "GET",
+                "url": host + "/user/infoEmail/" + email,
+            }).then(response => {
+                const obj = response.data;
+                const data = obj.data;
+                const msg = obj.message;
+                
+                // Check whether user id found.
+                if (data != null) {
+                    // Store current user's id and username in local storage. Function referenced from https://www.w3schools.com/jsref/prop_win_localstorage.asp.
+                    localStorage.setItem('userId', data.id);
+                    localStorage.setItem('username', data.username);
+
+                    // Assgin id to local variable for future use
+                    userId = data.id;
+
+                    // Personalize page's title to including the user's name. 
+                    document.querySelector('#title').innerHTML = data.username + "'s Dashboard";
+                } 
+                else {
+                    // User not found. Display message returned from backend through the HTTP request.
+                    console.log(msg);
+                    return;
+                }
+            }).finally(() => {
+                // User information sucessfully obtained. Call populateTags() function to obatin all the user's root tags.
+                // Note that parent tag id's value in local storage is null at this stage.
+                populateTags(localStorage.getItem("parentTagId"));
+            })
+            .catch(function (error) {
+                // If HTTP request for user information failed, log error message in console.
+                console.log(error);
+            });
+        };
+        
+        // obtaining all necessary elements in the HTML 
+        const searchBox = document.querySelector("#search-text");
+        const searchBtn = document.querySelector("#search-btn");
+        const resetBtn = document.querySelector("#reset-btn");
+        const logoutBtn = document.querySelector("#logout-btn");
+        const invitationBtn = document.querySelector("#invitation-btn");
+        const email = localStorage.getItem('email');
+        const token = localStorage.getItem('token');
+        const password = localStorage.getItem('password');
+        const accountType = localStorage.getItem('accountType');
+        
+        // Check if account type is admin. If not, remove admin only features in the HTML
+        if (accountType != "ADMIN") {
+            document.querySelector("#admin-only-features").remove();
+        }
+
+        // Call the its corresponding function when a button is clicked.
+        searchBtn.addEventListener('click', fullTextSearchTags);
+        resetBtn.addEventListener('click', reloadPage);
+        logoutBtn.addEventListener('click', logout);
+        invitationBtn.addEventListener('click', getInvitationCode);
+
+
+        // https://www.webmound.com/create-dynamic-html-element-css-using-javascript/
+        function populateTags(parentTagId) {
+
+            // If parent tag id received is not null and takes a valid value (ie greater than 0), then one is current looking at a nested tag layer
+            if (parentTagId != null && parentTagId > 0) {
+                // Add Return button for redirecting user to home page that displays the root tags. 
+                document.querySelector('#cards').innerHTML += `
+                    <div class="row text-center p-3">
+                        <button onclick="reloadPage(-1)" class="text-center btn btn-lg btn-primary">Return</button>
+                    </div>
+                `;
+
+                // HTTP request to call backend API for obtaining all current user's tags nested immediately under the indicated parent tag
+                axios({
+                    "headers": {'Access-Control-Allow-Origin': '*'},
+                    "method": "GET",
+                    "url": host + "/tag/getNestedTags/" + parentTagId
+                }).then(response => {
+                    // Response will contain an array of tag objects
+                    const obj = response.data;
+                    const tagsList = obj.data;
+                    const msg = obj.message;
+                    
+                    // For each tag in the returned tags array, create a Bootstrap card element for that tag.
+                    for (var i = 0; i < tagsList.length; i++) {
+                        const tagObj = tagsList[i];
+
+                        // Check if the current tag has further nested tag by calling checkForNestedTags() function and passing the current tag's id.
+                        var hasNestedTags = false;
+                        checkForNestedTags(tagObj.id)
+                        .then((response) => {
+                            hasNestedTags = response.data.data;
+                        })
+                        .finally(() => {
+                            // If current tag has further nested tags, display a Browse and Go button on the tag's card 
+                            if (hasNestedTags) {
+                                // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.
+                                document.querySelector('#cards').innerHTML += `
+                                    <div class="col-sm-6 p-2">
+                                        <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">`+ tagObj.name +`</h5>
+                                            <div class="row text-center">
+                                                <div class="col-sm m-3">
+                                                    <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id +`)" class="btn btn-lg btn-success">Browse all</a>
+                                                </div>
+                                                <div class="col-sm m-3">
+                                                    <button onclick="reloadPage(`+ tagObj.id +`)" class="btn btn-lg btn-primary">Go</button>
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            // If current tag has no further nested tags, only display a Browse button on the tag's card 
+                            else {
+                                // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.
+                                document.querySelector('#cards').innerHTML += `
+                                    <div class="col-sm-6 p-2">
+                                        <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">`+ tagObj.name +`</h5>
+                                            <div class="row text-center">
+                                                <div class="col-sm m-3">
+                                                    <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id +`)" class="btn btn-lg btn-success">Browse all</a>
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
+                            
+                        });   
+                    }
+
+                })
+                .catch(function (error) {
+                    // If HTTP request for obtaining nested tags failed, log error message in console.
+                    console.log(error);
+                });
+
+            }
+            // If parent tag id received is null and takes an invalid value (ie less than or equal to 0), then one is current looking at the root tag layer            
+            else {
+                // HTTP request to call backend API for obtaining all current user's root tags.
+                axios({
+                    "headers": {'Access-Control-Allow-Origin': '*'},
+                    "method": "GET",
+                    "url": host + "/tag/getRootTags/" + userId
+                }).then(response => {
+                    // Response will contain an array of tag objects
+                    const obj = response.data;
+                    const tagsList = obj.data;
+                    const msg = obj.message;
+                   
+                    // If the array of tags returned is not empty, populate the home Dashboard page displaying all root tags.
+                    if (tagsList.length != 0) {
+                        // Store user's array of root tags in local storage. JSON function referenced from https://stackoverflow.com/questions/3357553/how-do-i-store-an-array-in-localstorage
+                        localStorage.setItem('rootTags', JSON.stringify(tagsList));
+                        
+                        // For each tag in the returned tags array, create a Bootstrap card element for that tag.
+                        for (var i = 0; i < tagsList.length; i++) {
+                            const tagObj = tagsList[i];
+                            // Check if the current tag has further nested tag by calling checkForNestedTags() function and passing the current tag's id.
+                            var hasNestedTags = false;
+                            checkForNestedTags(tagObj.id)
+                            .then((response) => {
+                                hasNestedTags = response.data.data;
+                            })
+                            .finally(() => {
+                                // If current tag has further nested tags, display a Browse and Go button on the tag's card 
+                                if (hasNestedTags) {
+                                    // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                    // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.                                    
+                                    document.querySelector('#cards').innerHTML += `
+                                        <div class="col-sm-6 p-2">
+                                            <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">`+ tagObj.name +`</h5>
+                                                <div class="row text-center">
+                                                    <div class="col-sm m-3">
+                                                        <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id + `)" class="btn btn-lg btn-success">Browse all</a>
+                                                    </div>
+                                                    <div class="col-sm m-3">
+                                                        <button onclick="reloadPage(`+ tagObj.id +`)" class="btn btn-lg btn-primary">Go</button>
+                                                    </div>
+                                                </div>    
+                                            </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                                // If current tag has no further nested tags, only display a Browse button on the tag's card 
+                                else {
+                                    // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                    // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.
+                                    document.querySelector('#cards').innerHTML += `
+                                        <div class="col-sm-6 p-2">
+                                            <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">`+ tagObj.name +`</h5>
+                                                <div class="row text-center">
+                                                    <div class="col-sm m-3">
+                                                        <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id +`)" class="btn btn-lg btn-success">Browse all</a>
+                                                    </div>
+                                                </div>    
+                                            </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+
+                        }
+                    
+                    } 
+                    else {
+                        // If the array of root tags returned is empty, display message indicating that no tags and problems have been created yet.
+                        document.querySelector('#msg').innerHTML = "No tags and problems created yet! Click Add to start adding problems.";
+                    }
+
+                })
+                .catch(function (error) {
+                    // If HTTP request for obtaining root tags failed, log error message in console.
+                    console.log(error);
+                });
+            }
+          
+        }
+        
+        // Function for reloading the page, displaying either the root tags layer or a nested tag layer.
+        function reloadPage(tagId) {
+            // If the tag id passed in is invalid (ie null or less than 0), this suggests that the user is about to view the root tags layer.
+            if (tagId == null || tagId == -1){
+                // Store the parent tag in local storage as -1 (an invalid value) so the populateTags() function will make HTTP request for obtaining the user's root tags upon window's load.
+                localStorage.setItem('parentTagId', -1);
+            }
+            // If the tag id passed in is valid, this suggests that the user is about to view a nested tags layer.
+            else {
+                // Store the parent tag the user clicked on in local storage so the correct parent tag will be passed in to the populateTags() function upon window's load.
+                localStorage.setItem('parentTagId', tagId);
+            }
+            // Reset search field
+            searchBox.value = "";
+            // Window reload function reference from https://www.w3schools.com/jsref/met_loc_reload.asp.
+            location.reload();
+        }
+
+        // Function for checking if a tag has nested tags by making a HTTP request to call the backend API's function for checking for nested tags.
+        // Using Axios' async-await feature. Code adaptef from: https://rapidapi.com/guides/axios-async-await. 
+        async function checkForNestedTags(tagId) {
+            const result = await axios.get(host + "/tag/checkForNestedTag/" + tagId);
+            return result;
+        }
+        // End of adapted code.
+
+        // Function for browsing ALL problems under a tag, including those under its nested tags.
+        function browseProblemsUnderTagPage(tagId, tagName) {
+            // HTTP request to call API for obtaining a specific tag's information (id, name) function in the backend.
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "GET",
+                "url": host + "/tag/info/"+tagId,
+            }).then(response => {
+                const obj = response.data;
+                const msg = obj.message;
+                tagName = obj.data.name;
+                
+                // Store tag's id and name in local storage. Function referenced from https://www.w3schools.com/jsref/prop_win_localstorage.asp.
+                localStorage.setItem("browsingTagId", tagId);
+                localStorage.setItem("browsingTagName", tagName);
+
+                // Tag information found. Redirect user to Browse page.
+                window.location.replace("../app/browse.html");
+            })
+            .catch(function (error) {
+                // If HTTP request for tag information failed, log error message in console.
+                console.log(error);
+            });
+           
+        }
+
+        // Function for searching current user's tags across layers.        
+        function fullTextSearchTags() {
+            
+            // Obtaining the user input in the search field
+            const tagName = searchBox.value;
+     
+            // Check if input is empty or null
+            if (tagName == "" || tagName == null) {
+                return;
+            }
+
+            // HTTP request to call API for the tags search function in the backend.
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "GET",
+                "url": host + "/tag/search/"+userId+"/"+tagName
+            }).then(response => {
+                // Response will contain an array of tags that match the search content
+                const obj = response.data;
+                const msg = obj.message;
+                var resultTags = obj.data;
+               
+                // Reset the HTML div element with id "cards" to prepare for populating the dashboard with search results
+                document.querySelector('#cards').innerHTML = `
+                        <p class="fs-2 text-center" id="msg"></p>
+                `;
+
+                // If array of tags returned is empty, no tags were found by the search.
+                if (resultTags.length == 0) {
+                    document.querySelector('#msg').innerHTML = "No tags found.";
+                }
+                // If array of tags returned is not empty, populate the dashboard with all searched tags.
+                else {
+                    // For each tag in the returned tags array, create a Bootstrap card element for that tag.
+                    for (var i = 0; i < resultTags.length; i++) {   
+                        const tagObj = resultTags[i];
+                        
+                        // Check if the current tag has further nested tag by calling checkForNestedTags() function and passing the current tag's id.                        
+                        var hasNestedTags = false;
+                        checkForNestedTags(tagObj.id)
+                        .then((response) => {
+                            hasNestedTags = response.data.data;
+                        })
+                        .finally(() => {
+                            // If current tag has further nested tags, display a Browse and Go button on the tag's card.
+                            if (hasNestedTags) {
+                                // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.
+                                document.querySelector('#cards').innerHTML += `
+                                    <div class="col-sm-6 p-2">
+                                        <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">`+ tagObj.name +`</h5>
+                                            <div class="row text-center">
+                                                <div class="col-sm m-3">
+                                                    <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id +`)" class="btn btn-lg btn-success">Browse all</a>
+                                                </div>
+                                                <div class="col-sm m-3">
+                                                    <button onclick="reloadPage(`+ tagObj.id +`)" class="btn btn-lg btn-primary">Go</button>
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            // If current tag has no further nested tags, only display a Browse button on the tag's card.
+                            else {
+                                // Adding a Bootstrap Card element to the HTML div element identified by the id "cards". 
+                                // References: https://www.digitalocean.com/community/tutorials/how-to-add-javascript-to-html, https://getbootstrap.com/docs/5.0/components/card/.
+                                document.querySelector('#cards').innerHTML += `
+                                    <div class="col-sm-6 p-2">
+                                        <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">`+ tagObj.name +`</h5>
+                                            <div class="row text-center">
+                                                <div class="col-sm m-3">
+                                                    <a href=# onclick="return browseProblemsUnderTagPage(`+ tagObj.id +`)" class="btn btn-lg btn-success">Browse all</a>
+                                                </div>
+                                            </div>    
+                                        </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                        
+                }
+
+            })
+            .catch(function (error) {
+                // If HTTP request for searching tags failed, log error message in console.
+                console.log(error);
+            });
+        }
+        
+        // Function for logging out current user
+        function logout(){
+            // HTTP request to call API for the logout function in the backend.            
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/auth/logout",
+                "data": {
+                    "id": userId,
+                    "email": email,
+                    "password": password,
+                    "token": token
+                }
+            }).then(response => {
+                const obj = response.data;
+                const data = obj.data;
+                const msg = obj.message;
+                
+                // Check whether sucessfully logged out.
+                if (data) {
+                    // Logout success. Reset all user's information stored in local storage.
+                    localStorage.setItem('token', null);
+                    localStorage.setItem('userId', null);
+                    localStorage.setItem('email', null);
+                    localStorage.setItem('password', null);
+                    localStorage.setItem('accountType', null);
+                    localStorage.setItem('selectedProblemsIds', JSON.stringify([]));                    
+                    
+                    // Redirect user to welcome page.
+                    window.location.replace("../index.html");
+                } 
+                else {
+                    // Logout failed. Display message returned from backend through the HTTP request.
+                    document.querySelector('#msg').innerHTML = msg;
+                }
+            })
+            .catch(function (error) {
+                // If HTTP request for user logout failed, log error message in console.
+                console.log(error);
+            });
+
+        }
+
+        // Function for obtaining an invitation code (only accessible by Admin)
+        function getInvitationCode() {
+            // Obtain the HTML element where the invitation code will be displayed.
+            const display = document.querySelector("#code-display");
+
+            // HTTP request to call API for the request invitation code function in the backend.            
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/auth/getNewInvitationCode",
+                "data": {
+                    "id": userId,
+                    "email": email,
+                    "password": password,
+                    "token": token,
+                    "accountType": accountType
+                }
+            }).then(response => {
+                const obj = response.data;
+                const data = obj.data;
+                const msg = obj.message;
+                // Check whether sucessfully requested an invitation code.
+                if (data != null) {
+                    // Request success. Display new code in HTML. 
+                    display.innerHTML = data;
+                } 
+                else {
+                    // Request failed. Display message returned from backend through the HTTP request.
+                    display.innerHTML = msg;
+                }
+            })
+            .catch(function (error) {
+                // If HTTP request for invitation code request failed, log error message in console.
+                console.log(error);
+            });
+
+        }
+    
+    </script>
+
+</body> 
+</html>

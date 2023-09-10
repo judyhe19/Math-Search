@@ -1,0 +1,335 @@
+<!-- Browse tag page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+<body>
+    <!-- Using Bootstrap 5's Grid Layout support throughout. Reference: https://getbootstrap.com/docs/5.0/layout/grid/ -->
+    <!-- Using Bootstrap 5's Text support throughout. Reference: https://getbootstrap.com/docs/5.0/utilities/text/ -->  
+    <div class="container-md"> 
+        <div class="row text-center">
+            <!-- Page title -->
+            <div class="col-sm m-3">
+                <p class="fs-1 fw-bolder" id="title"></p>
+            </div>
+        </div>
+        
+        <div class="row p-1">
+            <div class="col-sm m-1">
+                <div class="row text-center">
+                    <p class="fs-3 fw-bolder">Problems</p>
+                 </div>
+                <div class="row p-3">
+                    <!-- Problems List -->
+                    <!-- Will be populated using JavaScript code upon loading of the window -->
+                    <ul class="list-group" id="problems-list">
+                    </ul>
+                </div> 
+                <div class="row text-center">
+                    <!-- Delete button -->
+                    <div class="col-sm">
+                        <button onclick="deleteProblem()" type="button" class="btn btn-danger btn-lg" id="btn-exit">DELETE</button>
+                    </div>
+                    <!-- Edit Problem button -->
+                    <div class="col-sm">
+                        <button onclick="editProblem()" type="button" class="btn btn-success btn-lg" id="btn-exit">EDIT</button>
+                    </div>
+                </div> 
+            </div>
+            <!-- Display of problem preview using Bootstrap 5's Card layout support. Reference: https://getbootstrap.com/docs/5.0/components/card/ -->
+            <div class="col-sm p-3">
+                <div class="row m-3">
+                    <!-- Display of the current select problem's question -->
+                    <div class="card">
+                        <h5 class="card-header text-center">QUESTION</h5>
+                        <div class="card-body">
+                            <!-- Will be modified using JavaScript code upon loading of the window -->
+                            <p class="card-text" id="question-body">PREVIEW QUESTION</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row m-3">
+                    <!-- Display of the current select problem's answer -->
+                    <div class="card">
+                        <h5 class="card-header text-center">ANSWER</h5>
+                        <div class="card-body">
+                            <!-- Will be modified using JavaScript code upon loading of the window -->
+                            <p class="card-text" id="answer-body">PREVIEW ANSWER</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Placeholder for displaying any error/warning messages -->
+        <div class="row text-center p-3">
+            <div class="col-sm m-3">
+                <h5 class="text-danger text-center" id="msg"></h5>
+            </div>
+        </div>
+
+        <!-- Exit button: Return to Dashboard page -->
+        <div class="row text-center m-5">
+            <div class="col-sm">
+                <button onclick="exit()" type="button" class="btn btn-primary btn-lg" id="btn-exit">EXIT</button>
+            </div>
+        </div>   
+       
+    </div>
+   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>     
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+    <script> 
+        const host = "http://localhost:8080";
+
+        // obtaining all necessary elements in the HTML and local storage
+        const browsingTagId = localStorage.getItem("browsingTagId");
+        const browsingTagName = localStorage.getItem("browsingTagName");
+        const userId = localStorage.getItem('userId'); 
+        var selectedProblemsIds = JSON.parse(localStorage.getItem('selectedProblemsIds'));
+        // Check if selected problems list in local storage is null. If yes, assign its local variable a empty array to prevent errors
+        if (selectedProblemsIds == null) {
+            selectedProblemsIds = [];
+        }
+        const selectElement = document.querySelector('#problems-list');
+        const qTitle = document.querySelector("#question-title");
+        const qBody = document.querySelector("#question-body");
+        const aTitle = document.querySelector("#answer-title");
+        const aBody = document.querySelector("#answer-body");
+        
+        // Keeping track of the checkboxes status
+        var checkboxesUnchecked = [];
+        var checkboxesChecked = [];
+
+        // Keeping track of problem ids in the list 
+        const problemIds = [];
+
+        // Keep a record of the most recent event for displaying a preview of the problem
+        var mostRecentEvent = null;
+
+        // Calling necessary functions upon loading the window. Function referenced from: https://stackoverflow.com/questions/3842614/how-do-i-call-a-javascript-function-on-page-load
+        window.onload = function() {
+            // Setting page title 
+            document.querySelector("#title").innerHTML = browsingTagName;
+            // Populaitng problem list 
+            populateProblems();
+            
+        };
+
+        // When a problem's checkbox is checked or unchecked, evoke corresponding functions 
+        // Referenced code: https://www.folkstalk.com/tech/checkbox-event-listener-with-code-examples/
+        selectElement.addEventListener('change', (event) => {
+            // If the problem's checkbox is just checked, update the preview HTML elements to display its quesiton and answer text
+            if (event.target.checked) {
+                // Update the most recent event
+                mostRecentEvent = event;
+                // obtain the checked problem's id and question text
+                pId = event.target.id;
+                pTitle = event.target.value;
+                // HTTP request to call backend API for obtaining all the question and answer texts of the current checked (selected) problem
+                axios({
+                    "headers": {'Access-Control-Allow-Origin': '*'},
+                    "method": "POST",
+                    "url": host + "/problem/findByQuestionAndOwner",
+                    "data": {
+                        "id": pId,
+                        "questionText": pTitle,
+                        "ownerId": userId
+                    }
+                }).then(response => {
+                    // response returns the problem object, the  problem just checked (selected)
+                    const obj = response.data;
+                    const problem = obj.data;
+                    const msg = obj.message;
+
+                    // Set preview HTML elements to display the received quesiton and answer texts
+                    qBody.innerHTML = problem.questionText;
+                    aBody.innerHTML = problem.answerText;
+
+                })
+                .catch(function (error) {
+                    // If HTTP request for obtaining the checked problem failed, log error message in console.              
+                    console.log(error);
+                });
+            }
+            // If the problem's checkbox is just unchecked, reset the preview HTML elements. 
+            else {
+                qBody.innerHTML = "PREVIEW QUESTION";
+                aBody.innerHTML = "PREVIEW ANSWER";
+            }
+        });
+
+        // Function for populating the Problems list
+        function populateProblems() {
+            // HTTP request to call backend API for retrieving all problems under current browsed tag
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/problem/getProblemsUnderTag",
+                "data": {
+                    "id": browsingTagId,
+                    "name": browsingTagName,
+                    "ownerId": userId
+                }
+            }).then(response => {
+                // Response will contain an array of problem objects
+                const obj = response.data;
+                const problemsList = obj.data;
+                const msg = obj.message;
+
+                // Check if the array received is empty
+                if (problemsList.length == 0) {
+                    // If empty, display message indicating that there are no problems under the current browsed tag and return
+                    document.querySelector('#msg').innerHTML = "No problems under this tag";
+                    return;
+                }
+
+                // For each problem in the returned problems array, add the problem to the Problems list HTML element
+                for (var i = 0; i < problemsList.length; i++) {
+                    const pObj = problemsList[i];
+                    // Update the local problem ids array
+                    problemIds.push(pObj.id);
+                    // Depending on whether the problem exists in the selected problems list of the user, set its initial checkbox status to checked or unchecked.
+                    // This prevents the user from selecting the same problem twice.
+                    if (selectedProblemsIds.length != 0 && selectedProblemsIds.includes(pObj.id.toString())) {
+                        // If selected problem list is not empty and includes the current problem, display the problem in the list with its checkbox checked
+                        document.querySelector('#problems-list').innerHTML += `
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" checked=checked type="checkbox" id="`+ pObj.id +`" name="checkbox" value="`+ pObj.questionText +`" aria-label="...">
+                                Problem `+ (i+1) +`
+                            </li>
+                        `;
+                    }
+                    // If selected problem list is empty or does not include the current problem, display the problem in the list with its checkbox unchecked
+                    else {
+                        document.querySelector('#problems-list').innerHTML += `
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" id="`+ pObj.id +`" name="checkbox" value="`+ pObj.questionText +`" aria-label="...">
+                                Problem `+ (i+1) +`
+                            </li>
+                        `;
+                    }
+                }
+
+            })
+            .catch(function (error) {
+                // If HTTP request for obtaining problems under the current browsed tag failed, log error message in console.
+                console.log(error);
+            });
+        }
+
+        // Function for exiting the browse page, including updating the selected problems list in local storage for the user
+        function exit() {
+            // Call function to check all the checkboxes, recording both the checked and unchecked and updating their respective local arrays
+            reviewCheckedBoxes("checkbox");
+
+            // If there are checked (selected) questions, for each checked question, add it to the selected problems list if not already in the list
+            if (checkboxesChecked != null && checkboxesChecked.length != 0) {
+                for (var i=0; i<checkboxesChecked.length; i++) {
+                    // Check whether if it is already in local storage. If not, push it to the selected problems javascript array. 
+                    // Prevents user from selecting the same problem multiple times
+                    if (!selectedProblemsIds.includes(checkboxesChecked[i].id)) {
+                        selectedProblemsIds.push(checkboxesChecked[i].id);
+                    }
+                }
+            }
+            // If there are unchecked (un-selected) questions, for each unchecked question, delete it from the selected problems list if in the list
+            if (checkboxesUnchecked != null && checkboxesUnchecked.length != 0) {
+                for (var i=0; i<checkboxesUnchecked.length; i++) {
+                    // If the unchecked problem exists in the selected problems list, remove the problem from the selected problems list 
+                    // Code for removing an element from a JavaScript array
+                    // Adapted from: https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array 
+                    const index = selectedProblemsIds.indexOf(checkboxesUnchecked[i].id);
+                    if (index > -1) { // only splice array when item is found
+                        selectedProblemsIds.splice(index, 1); // 2nd parameter means remove one item only
+                    }
+                    // End of code adaptation
+                }
+            }
+            
+            // Update selected problems list stored in local storage for the user
+            localStorage.setItem('selectedProblemsIds', JSON.stringify(selectedProblemsIds)); // how to store arrays in JS local storage: https://stackoverflow.com/questions/3357553/how-do-i-store-an-array-in-localstorage
+            // Redirect user to the Dashboard (home) page, completing the exit function.
+            window.location.replace("../app/dashboard.html");
+        }
+        
+        // Delete problem 
+        function deleteProblem() {
+            // Check for the most recently selected problem - the problem to delete
+            if (mostRecentEvent == null) {
+                document.querySelector('#msg').innerHTML = "You do not have a problem selected";
+                return;
+            }
+            pId = mostRecentEvent.target.id;
+            pTitle = mostRecentEvent.target.value;
+
+            // HTTP request to call backend API for deleting a problem
+            axios({
+                "headers": {'Access-Control-Allow-Origin': '*'},
+                "method": "POST",
+                "url": host + "/problem/delete",
+                "data": {
+                    "id": pId,
+                    "questionText": pTitle,
+                    "ownerId": userId
+                }
+            }).then(response => {
+                const obj = response.data;
+                const problem = obj.data;
+                const msg = obj.message;
+                // Reload page after sucessful deletion
+                location.reload();
+            })
+            .catch(function (error) {
+                // If HTTP request for deleting a problem failed, log error message in console.              
+                console.log(error);
+            });
+
+        }
+
+        // Edit a problem 
+        function editProblem() {
+            // Check for most recently selected event
+            if (mostRecentEvent == null) {
+                document.querySelector('#msg').innerHTML = "You do not have a problem selected";
+                return;
+            }
+            pId = mostRecentEvent.target.id;
+            pTitle = mostRecentEvent.target.value;
+
+            // Store the id and question text of the most recently selected event in local storage
+            localStorage.setItem("editPId", pId);
+            localStorage.setItem("editPQText", pTitle);
+
+            // Redirect user to edit problem page
+            window.location.replace("../app/edit.html");
+           
+        }
+
+        // Check the status of all checkboxes, recording the checked and unchecked in their respective local arrays
+        // Pass the checkboxes' name to the function (all checkboxes were given the same name)
+        // Code adapted from https://stackoverflow.com/questions/8563240/how-to-get-all-checked-checkboxes
+        function reviewCheckedBoxes(chkboxName) {
+            var checkboxes = document.getElementsByName(chkboxName);
+            // loop over them all
+            for (var i=0; i<checkboxes.length; i++) {
+                // And stick the checked ones onto an array...
+                if (checkboxes[i].checked) {
+                    checkboxesChecked.push(checkboxes[i]);
+                }
+                else {
+                    checkboxesUnchecked.push(checkboxes[i]);
+                }
+            }
+        }
+        // End of code adaptation
+    
+    </script>
+
+</body> 
+
+</html>

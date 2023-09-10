@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.ProblemDao">
+
+    <!--Queries related to the Problems table in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.Problem">
+        <id property="id" column="id" />
+        <result property="questionText" column="question_text" />
+        <result property="questionImage" column="question_image" />
+        <result property="questionLatexCode" column="question_latex_code" />
+        <result property="answerText" column="answer_text" />
+        <result property="answerImage" column="answer_image" />
+        <result property="answerLatexCode" column="answer_latex_code" />
+        <result property="ownerId" column="owner_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Problems
+    </sql>
+
+    <sql id="selectSql">
+        select id, question_text, question_image, question_latex_code, answer_text, answer_image, answer_latex_code, owner_id
+    </sql>
+
+    <!-- Find a problem by its id-->
+    <select id="findByProblemId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+    <!-- Find problems by owner id-->
+    <select id="findProblemsByOwnerId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where owner_id = #{ownerId}
+    </select>
+
+    <!-- Find a problem by its question text -->
+    <select id="findProblemByQuestionText" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where question_text = #{questionText} and owner_id = #{ownerId};
+    </select>
+
+    <!-- Search for problems by question text-->
+    <select id="fullTextSearchByQuestionText" resultMap="resultMap">
+        <include refid="selectSql"/>
+        FROM <include refid="tableName"/>
+        WHERE Match(question_text) AGAINST (#{questionText} IN NATURAL LANGUAGE MODE) AND owner_id = #{ownerId};
+    </select>
+
+    <!-- Insert a problem into the database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.Problem">
+        insert into <include refid="tableName"/>
+        (question_text, question_image, question_latex_code, answer_text, answer_image, answer_latex_code, owner_id)
+        values (#{questionText}, #{questionImage}, #{questionLatexCode}, #{answerText}, #{answerImage}, #{answerLatexCode}, #{ownerId});
+    </insert>
+
+    <!-- Update a problem in the database-->
+    <update id="updateProblem">
+        UPDATE <include refid="tableName"/>
+        SET
+        question_text = #{questionText},
+        question_image = #{questionImage},
+        question_latex_code = #{questionLatexCode},
+        answer_text = #{answerText},
+        answer_image = #{answerImage},
+        answer_latex_code = #{answerLatexCode}
+        WHERE id = #{id} AND owner_id = #{ownerId};
+    </update>
+
+</mapper>

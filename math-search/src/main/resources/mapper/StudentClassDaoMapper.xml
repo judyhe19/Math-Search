@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.StudentClassDao">
+
+    <!--Queries related to the Student Classes table in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.StudentClass">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="teacherId" column="teacher_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Student_Classes
+    </sql>
+
+    <sql id="selectSql">
+        select id, name, teacher_id
+    </sql>
+
+    <!-- Find a student class by its id-->
+    <select id="findById" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+
+    <!-- Find student classes by teacher id-->
+    <select id="findClassesByTeacherId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        WHERE teacher_id = #{teacherId}
+    </select>
+
+    <!-- Find a student class by its name and teacher id-->
+    <select id="findByNameAndTeacherId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        WHERE name = #{name} AND teacher_id = #{teacherId}
+    </select>
+
+    <!-- Insert a new student class into database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.StudentClass">
+        insert into <include refid="tableName"/>
+        (name, teacher_id)
+        values (#{name}, #{teacherId});
+    </insert>
+
+    <!-- Update a student class in database-->
+    <update id="updateClassName">
+        UPDATE <include refid="tableName"/>
+        SET
+        name = #{name}
+        WHERE teacher_id = #{teacherId};
+    </update>
+
+    <!-- Delete a student class in database-->
+    <delete id="delete">
+        DELETE from <include refid="tableName"/>
+        WHERE name = #{name} OR teacher_id = #{teacherId};
+    </delete>
+
+</mapper>

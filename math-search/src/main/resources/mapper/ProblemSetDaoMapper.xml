@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.ProblemSetDao">
+
+    <!--Queries related to the Problem Sets table in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.ProblemSet">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="ownerId" column="owner_id" />
+        <result property="classId" column="class_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Problem_Sets
+    </sql>
+
+    <sql id="selectSql">
+        select id, name, owner_id, class_id
+    </sql>
+
+<!--    Find problem set by its id-->
+    <select id="findById" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+
+<!--    Find problem sets by class id-->
+    <select id="findProblemSetsByClassId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        WHERE class_id = #{classId}
+    </select>
+
+<!--    Find problem sets by owner id-->
+    <select id="getSetsByOwnerId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        WHERE owner_id = #{ownerId}
+    </select>
+
+<!--    Find a problem set by its name and owner id-->
+    <select id="findSetByNameAndOwner" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        WHERE name = #{name} AND owner_id = #{ownerId}
+    </select>
+
+<!--    Insert a new problem set into database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.ProblemSet">
+        insert into <include refid="tableName"/>
+        (name, owner_id, class_id)
+        values (#{name}, #{ownerId}, #{classId});
+    </insert>
+
+<!--    Update the class for a problem set in database-->
+    <update id="updateClassForSet">
+        UPDATE <include refid="tableName"/>
+        SET
+        class_id = #{classId}
+        WHERE name = #{name} AND owner_id = #{ownerId}
+    </update>
+
+<!--    Delete a problem delete in database-->
+    <delete id="delete">
+        DELETE from <include refid="tableName"/>
+        WHERE name = #{name} OR owner_id = #{ownerId};
+    </delete>
+
+</mapper>

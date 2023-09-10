@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row align-items-center p-2">
+            <div class="col">
+                <h1 class="fs-1 fw-bold">Register for a new account</h1>
+                <h3 class="text-success opacity-50">Validation Success.</h3>
+            </div>
+        </div>
+
+        <form th:action="@{/user/registerUser}" th:object="${user}" method="POST"class="needs-validation" novalidate>
+            <div class="form-group mt-3">
+                <label for="validationCustom01" class="form-label">Name</label>
+                <input id="validationCustom01" type="text" th:field="*{username}" placeholder="First and Last Name" class="form-control col-4" required/>
+                <div class="valid-feedback">
+                    Looks good!
+                </div>
+                <div class="invalid-feedback">
+                    Please provide your name.
+                </div>
+            </div>
+            <div class="form-group mt-3">
+                <label for="validationCustom02" class="form-label">Email address</label>
+                <input id="validationCustom02" type="email" th:field="*{email}" placeholder="example@example.com" class="form-control col-4" required/>
+                <div class="valid-feedback">
+                    Looks good!
+                </div>
+                <div class="invalid-feedback">
+                    Please provide your email.
+                </div>
+            </div>
+            <div class="form-group mt-3">
+                <label for="validationCustom03" class="form-label">Password</label>
+                <input id="validationCustom03" type="password" th:field="*{password}" placeholder="Password" class="form-control col-4" required/>
+                <div class="invalid-feedback">
+                    Please provide a password.
+                </div>
+            </div>
+            <div class="form-group mt-3">
+                <label class="mb-1">Account Type</label>
+                <input type="text" name="accountType" th:value="Teacher" value="Teacher" placeholder="Teacher" class="form-control col-4" readonly/>
+                <small class="form-text text-muted">This is a pre-defined field.</small>
+            </div>
+            <button class="btn btn-primary mt-4" type="submit">Register</button>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
+    <script>
+        (function () {
+                  'use strict'
+
+                  // Fetch all the forms we want to apply custom Bootstrap validation styles to
+                  var forms = document.querySelectorAll('.needs-validation')
+
+                  // Loop over them and prevent submission
+                  Array.prototype.slice.call(forms)
+                    .forEach(function (form) {
+                      form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                          event.preventDefault()
+                          event.stopPropagation()
+                        }
+
+                        form.classList.add('was-validated')
+                      }, false)
+                    })
+                })()
+    </script>
+
+</body>
+</html>

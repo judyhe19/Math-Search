@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.TagDao">
+
+    <!--Queries related to the Tags table in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.Tag">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="userId" column="user_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Tags
+    </sql>
+
+    <sql id="selectSql">
+        select id, name, user_id
+    </sql>
+
+    <!-- Find a tag by its id-->
+    <select id="findById" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+
+    <!-- Find tags by user id-->
+    <select id="findTagsByUserId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where user_id = #{userId}
+    </select>
+
+    <!-- Find a tag by its name and user id-->
+    <select id="findByName" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where name = #{name} and user_id = #{userId};
+    </select>
+
+    <!-- Search for tags by name and user id-->
+    <select id="fullTextSearchByNameAndUserId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        FROM <include refid="tableName"/>
+        WHERE Match(name) AGAINST (#{name} IN NATURAL LANGUAGE MODE) AND user_id = #{userId};
+    </select>
+
+    <!-- Insert a new tag into database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.Tag">
+        insert into <include refid="tableName"/>
+        (name, user_id)
+        values (#{name}, #{userId});
+    </insert>
+
+    <!-- Update a tag in database-->
+    <update id="updateTag">
+        UPDATE <include refid="tableName"/>
+        SET
+        name = #{name}
+        WHERE id = #{id} AND user_id = #{userId};
+    </update>
+
+</mapper>

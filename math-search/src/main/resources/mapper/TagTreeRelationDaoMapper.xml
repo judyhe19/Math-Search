@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.TagTreeRelationDao">
+
+    <!--Queries related to the Tag-Tree relationships tables in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.TagTreeRelation">
+        <id property="id" column="id" />
+        <result property="treeId" column="tree_id" />
+        <result property="parentTagId" column="parent_tag_id" />
+        <result property="childTagId" column="child_tag_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Tag_Tree_Relationships
+    </sql>
+
+    <sql id="selectSql">
+        select id, tree_id, parent_tag_id, child_tag_id
+    </sql>
+
+    <!-- Find a tag-tree relationship by either a parent or child tag's id-->
+    <select id="findRelationByAnyTagId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where parent_tag_id = #{tagId} OR child_tag_id = #{tagId}
+        LIMIT 1;
+    </select>
+
+    <!-- Find a tag-tree relationship by a parent tag's id-->
+    <!-- for determining if a tag has child tags (check if a relation exists with it being the parent tag). Must be only a leaf/child tag if NULL is returned-->
+    <!-- If found, the tag is a parent tag; returns a list of relations that include the tag's child tags -->
+    <select id="findRelationsByParentTagId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where parent_tag_id = #{tagId}
+    </select>
+
+    <!-- Find a tag-tree relationship by a child tag's id-->
+    <!-- for determining if a tag has parent tag(s) (check if relation(s) exists with it being a child tag). Must be a root tag if NULL is returned-->
+    <!-- If found, the tag is a parent tag; returns a list of relations that include the tag's child tags -->
+    <select id="findRelationByChildTagId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where child_tag_id = #{tagId}
+    </select>
+
+    <!-- Insert a new tag-tree relationship -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.TagTreeRelation">
+        insert into <include refid="tableName"/>
+        (tree_id, parent_tag_id, child_tag_id)
+        values (#{treeId}, #{parentTagId}, #{childTagId});
+    </insert>
+
+    <!-- Update a tag-tree relationship (update the tag tree for a child tag) -->
+    <update id="updateTreeForChildTag">
+        UPDATE <include refid="tableName"/>
+        SET tree_id = #{treeId}
+        where child_tag_id = #{childTagId};
+    </update>
+
+    <!-- Update a tag-tree relationship (update the parent tag of a tag) -->
+    <update id="updateParentForChildTag">
+        UPDATE <include refid="tableName"/>
+        SET
+        parent_tag_id = #{parentTagId}
+        where child_tag_id = #{childTagId};
+    </update>
+
+    <!-- Delete a tag-tree relationship through by child tag id -->
+    <delete id="deleteByChildTagId">
+        DELETE from <include refid="tableName"/>
+        WHERE child_tag_id = #{tagId};
+    </delete>
+
+</mapper>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.ProblemRelationsDao">
+
+    <!--Queries related to the Problem-Problem Set (PPS) and Problem-Tag (PT) relationships tables in the MySQL database using the XML markup language-->
+
+    <resultMap id="PPSResultMap" type="com.yanqihe.mathsearch.domain.ProblemProblemSetRelation">
+        <id property="id" column="id" />
+        <result property="problemId" column="problem_id" />
+        <result property="setId" column="set_id" />
+    </resultMap>
+
+    <resultMap id="PTResultMap" type="com.yanqihe.mathsearch.domain.ProblemTagRelation">
+        <id property="id" column="id" />
+        <result property="problemId" column="problem_id" />
+        <result property="tagId" column="tag_id" />
+    </resultMap>
+
+    <sql id="PPSTable">
+        Problem_Problem_Set_Relationships
+    </sql>
+    <sql id="PTTable">
+        Problem_Tag_Relationships
+    </sql>
+
+    <sql id="selectPPSSql">
+        select id, problem_id, set_id
+    </sql>
+    <sql id="selectPTSql">
+        select id, problem_id, tag_id
+    </sql>
+
+    <!--Find PT relationships by the tag's id-->
+    <select id="getProblemsUnderTag" resultMap="PTResultMap">
+        <include refid="selectPTSql"/>
+        from <include refid="PTTable"/>
+        where tag_id = #{tagId}
+    </select>
+
+    <!--Find PPS relationships by the problem set's id-->
+    <select id="getProblemsInSet" resultMap="PPSResultMap">
+        <include refid="selectPPSSql"/>
+        from <include refid="PPSTable"/>
+        where set_id = #{setId}
+    </select>
+
+    <!--Find PT relationships by its id-->
+    <select id="findPTRelationById" resultMap="PTResultMap">
+        <include refid="selectPTSql"/>
+        from <include refid="PTTable"/>
+        where id = #{id}
+    </select>
+    <select id="findPTRelationsByTagId" resultMap="PTResultMap">
+        <include refid="selectPTSql"/>
+        from <include refid="PTTable"/>
+        where tag_id = #{tagId}
+    </select>
+    <!--Find PPS relationships by its id-->
+    <select id="findPPSRelationById" resultMap="PPSResultMap">
+        <include refid="selectPPSSql"/>
+        from <include refid="PPSTable"/>
+        where id = #{id}
+    </select>
+    <select id="findPPSRelationsBySetId" resultMap="PPSResultMap">
+        <include refid="selectPPSSql"/>
+        from <include refid="PPSTable"/>
+        where set_id = #{setId}
+    </select>
+
+    <!--Find PT relationship by problem's id-->
+    <select id="findPTRelationByProblemId" resultMap="PTResultMap">
+        <include refid="selectPTSql"/>
+        from <include refid="PTTable"/>
+        where problem_id = #{problemId}
+    </select>
+    <!--Find PPS relationship by problem's id-->
+    <select id="findPPSRelationByProblemId" resultMap="PPSResultMap">
+        <include refid="selectPPSSql"/>
+        from <include refid="PPSTable"/>
+        where problem_id = #{problemId}
+    </select>
+
+    <!--Insert new PPS relationship into database-->
+    <insert id="insertPPSRelation" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.ProblemProblemSetRelation">
+        insert into <include refid="PPSTable"/>
+        (problem_id, set_id)
+        values (#{problemId}, #{setId});
+    </insert>
+    <!--Insert new PT relationship into database-->
+    <insert id="insertPTRelation" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.ProblemTagRelation">
+        insert into <include refid="PTTable"/>
+        (problem_id, tag_id)
+        values (#{problemId}, #{tagId});
+    </insert>
+
+    <!--Update a PPS relationship (the problem set's id) in database-->
+    <update id="updateSetForProblem'">
+        UPDATE <include refid="PPSTable"/>
+        SET
+        set_id = #{setId}
+        where problem_id = #{problemId};
+    </update>
+    <!--Update a PT relationship (the tag's id) in database-->
+    <update id="updateTagForProblem">
+        UPDATE <include refid="PTTable"/>
+        SET
+        tag_id = #{tagId}
+        where problem_id = #{problemId};
+    </update>
+
+    <!--Delete a PPS relationship in database (searched by problem's and problem set's id)-->
+    <delete id="deleteProblemInSet">
+        DELETE from <include refid="PPSTable"/>
+        WHERE problem_id = #{problemId} AND set_id = #{setId};
+    </delete>
+    <!--Delete a PT relationship in database (searched by problem's and tag's id)-->
+    <delete id="deleteProblemUnderTag">
+        DELETE from <include refid="PTTable"/>
+        WHERE problem_id = #{problemId} AND tag_id = #{tagId};
+    </delete>
+
+    <!--Delete a PPS relationship in database (searched by its id)-->
+    <delete id="deletePSS">
+        DELETE from <include refid="PPSTable"/>
+        WHERE id = #{id};
+    </delete>
+    <!--Delete a PT relationship in database (searched by its id)-->
+    <delete id="deletePT">
+        DELETE from <include refid="PTTable"/>
+        WHERE id = #{id};
+    </delete>
+
+</mapper>

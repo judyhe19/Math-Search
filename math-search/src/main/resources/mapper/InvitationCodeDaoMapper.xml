@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.InvitationDao">
+
+    <!--Queries related to the Invitation Codes table in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.InvitationCode">
+        <id property="id" column="id" />
+        <result property="invitationCode" column="invitation_code" />
+        <result property="invitationExpire" column="invitation_expire" />
+        <result property="adminId" column="admin_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Invitation_Codes
+    </sql>
+
+    <sql id="selectSql">
+        select id, invitation_code, invitation_expire, admin_id
+    </sql>
+
+<!--    Find invitation code by code-->
+    <select id="findByCode" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where invitation_code = #{invitationCode}
+    </select>
+
+<!--    Insert a new invitation code into the database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.InvitationCode">
+        insert into <include refid="tableName"/>
+        (invitation_code, invitation_expire, admin_id)
+        values (#{invitationCode}, #{invitationExpire}, #{adminId});
+    </insert>
+
+</mapper>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.TreeDao">
+
+    <!--Queries related to the Trees tables in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.Tree">
+        <id property="id" column="id" />
+        <result property="firstTagId" column="first_tag_id" />
+        <result property="userId" column="user_id" />
+    </resultMap>
+
+    <sql id="tableName">
+        Trees
+    </sql>
+
+    <sql id="selectSql">
+        select id, first_tag_id, user_id
+    </sql>
+
+    <!-- Find trees by user id-->
+    <select id="getAllTrees" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where user_id = #{userId}
+    </select>
+    <select id="findTreesByUserId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where user_id = #{userId}
+    </select>
+
+    <!-- Find a tree by its id-->
+    <select id="findById" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+
+    <!-- Find a tree by its first tag's (root tag) id-->
+    <select id="findByFirstTagId" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where first_tag_id = #{firstTagId} and user_id = #{userId};
+    </select>
+
+    <!-- Insert a new tree into database -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.Tree">
+        insert into <include refid="tableName"/>
+        (first_tag_id, user_id)
+        values (#{firstTagId}, #{userId});
+    </insert>
+
+    <!-- Update a tree in database -->
+    <update id="updateTreeRoot">
+        UPDATE <include refid="tableName"/>
+        SET
+        first_tag_id = #{firstTagId},
+        WHERE id = #{id} AND user_id = #{userId};
+    </update>
+
+</mapper>

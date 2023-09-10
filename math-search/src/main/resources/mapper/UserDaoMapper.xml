@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yanqihe.mathsearch.dao.UserDao">
+
+    <!--Queries related to the Users tables in the MySQL database using the XML markup language-->
+
+    <resultMap id="resultMap" type="com.yanqihe.mathsearch.domain.User">
+        <id property="id" column="id" />
+        <result property="username" column="username" />
+        <result property="email" column="email" />
+        <result property="password" column="password" />
+        <result property="token" column="token" />
+        <result property="tokenExpire" column="token_expire" />
+        <result property="accountType" column="account_type" />
+    </resultMap>
+
+    <sql id="tableName">
+        Users
+    </sql>
+
+    <sql id="selectSql">
+        select id, username, email, password, token, token_expire, account_type
+    </sql>
+
+    <!-- Find a user by their id-->
+    <select id="findById" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where id = #{id}
+    </select>
+
+    <!-- Find a user by their email-->
+    <select id="findByEmail" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where email = #{email}
+    </select>
+
+    <!-- Find a user by their email and token-->
+    <select id="findByCred" resultMap="resultMap">
+        <include refid="selectSql"/>
+        from <include refid="tableName"/>
+        where email = #{email} and token = #{token};
+    </select>
+
+    <!-- Insert a new user into database-->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.yanqihe.mathsearch.domain.User">
+        insert into <include refid="tableName"/>
+        (username, email, password, token, token_expire, account_type)
+        values (#{username}, #{email}, #{password}, #{token}, #{tokenExpire}, #{accountType});
+    </insert>
+
+    <!-- Update a user (token and token expiration date) in database-->
+    <update id="updateLoginInfo">
+        UPDATE <include refid="tableName"/>
+        SET
+        token = #{token},
+        token_expire = #{tokenExpire}
+        WHERE id = #{id}
+    </update>
+
+    <!-- Update a user (password) in database-->
+    <update id="updatePassword">
+        UPDATE <include refid="tableName"/>
+        SET
+        password = #{password}
+        WHERE id = #{id}
+    </update>
+
+    <!-- Update a user (username) in database-->
+    <update id="updateUsername">
+        UPDATE <include refid="tableName"/>
+        SET
+        username = #{username}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
