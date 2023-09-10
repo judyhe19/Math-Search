@@ -3,4 +3,4 @@ A full-stack education-purposed web app for AISB’s math department to store, o
 
 Technical languages/tools/frameworks applied:
 - Backend (developed in IntelliJ): Java, TypeScript, XML, Spring Boot, MyBatis, SQL, MySQL
-- Frontend (developed in VSCode: JavaScript, HTML5/CSS, Bootstrap
+- Frontend (developed in VSCode): JavaScript, HTML5/CSS, Bootstrap
